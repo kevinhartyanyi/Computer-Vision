@@ -1,0 +1,9 @@
+﻿  GUI.cpp
+S:\Projekt\School\Computer-Vision\HW1-GUI\HW1-GUI\GUI.cpp(143,66): warning C4244: 'argument': conversion from 'double' to '_Tp', possible loss of data
+S:\Projekt\School\Computer-Vision\HW1-GUI\HW1-GUI\GUI.cpp(143,66): warning C4244:         with
+S:\Projekt\School\Computer-Vision\HW1-GUI\HW1-GUI\GUI.cpp(143,66): warning C4244:         [
+S:\Projekt\School\Computer-Vision\HW1-GUI\HW1-GUI\GUI.cpp(143,66): warning C4244:             _Tp=int
+S:\Projekt\School\Computer-Vision\HW1-GUI\HW1-GUI\GUI.cpp(143,66): warning C4244:         ]
+S:\Projekt\School\Computer-Vision\HW1-GUI\HW1-GUI\GUI.cpp(149,10): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
+S:\Projekt\School\Computer-Vision\HW1-GUI\HW1-GUI\GUI.cpp(150,10): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
+  HW1-GUI.vcxproj -> S:\Projekt\School\Computer-Vision\HW1-GUI\x64\Debug\HW1-GUI.exe
