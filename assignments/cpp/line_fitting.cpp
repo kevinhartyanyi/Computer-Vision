@@ -18,10 +18,17 @@ void FitLineRANSAC(
 	Mat &line,
 	double threshold,
 	int iteration_number,
-	Mat *image = nullptr);
+	Mat *image = nullptr,
+	bool shouldDraw = false);
 
-int main( )
+int main(int argc, char *argv[])
 {
+	if( argc != 2)
+    {
+		cout << "Use a threshold parameter" << endl;
+		return -1;
+    }
+
     string img_name = "left.jpg";
 
     Mat image = imread(img_name);
@@ -64,9 +71,14 @@ int main( )
 		points, // The generated 2D points
 		inliers, // Output: the indices of the inliers
 		bestLine, // Output: the parameters of the found 2D line
-		1.0, // The inlier-outlier threshold
+		atof(argv[1]), // The inlier-outlier threshold
 		1000, // The number of iterations
-		&results); // Optional: the image where we can draw results
+		&results,// Optional: the image where we can draw results
+		false); 
+
+	imshow("Result", results);
+
+	imwrite("result_" + img_name, results);
 
     waitKey(0);
 } 
@@ -92,7 +104,8 @@ void FitLineRANSAC(
 	Mat &line_,
 	double threshold_,
 	int maximum_iteration_number_,
-	Mat *image_)
+	Mat *image_, 
+	bool shouldDraw)
 {
 	// The current number of iterations
 	int iterationNumber = 0;
@@ -111,7 +124,6 @@ void FitLineRANSAC(
 	// The current sample
 	std::vector<int> sample(kSampleSize);
 
-	bool shouldDraw = image_ != nullptr;
 	cv::Mat tmp_image;
 
 	// RANSAC:
