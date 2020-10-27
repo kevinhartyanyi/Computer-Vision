@@ -13,92 +13,6 @@
 using namespace cv;
 using namespace std;
 
-void drawPoints(const MatrixReaderWriter& mrw, float u, float v, float rad, Mat &resImg)
-{
-	int NUM = mrw.rowNum;
-
-	Mat C(3, 3, CV_32F);
-	Mat R(3, 3, CV_32F);
-	Mat T(3, 1, CV_32F);
-
-	float tx = cos(u) * sin(v);
-	float ty = sin(u) * sin(v);
-	float tz = cos(v);
-
-	//Intrincic parameters
-
-	C.at<float>(0, 0) = 3000.0f;
-	C.at<float>(0, 1) = 0.0f;
-	C.at<float>(0, 2) = 400.0f;
-
-	C.at<float>(1, 0) = 0.0f;
-	C.at<float>(1, 1) = 3000.0f;
-	C.at<float>(1, 2) = 300.0f;
-
-	C.at<float>(2, 0) = 0.0f;
-	C.at<float>(2, 1) = 0.0f;
-	C.at<float>(2, 2) = 1.0f;
-
-	T.at<float>(0, 0) = rad * tx;
-	T.at<float>(1, 0) = rad * ty;
-	T.at<float>(2, 0) = rad * tz;
-
-	//Mirror?
-	int HowManyPi = (int)floor(v / 3.1415);
-
-	//Axes:
-	Point3f Z(-1.0 * tx, -1.0 * ty, -1.0 * tz);
-	Point3f X(sin(u) * sin(v), -cos(u) * sin(v), 0.0f);
-	if (HowManyPi % 2)
-		X = (1.0 / sqrt(X.x * X.x + X.y * X.y + X.z * X.z)) * X;
-	else
-		X = (-1.0 / sqrt(X.x * X.x + X.y * X.y + X.z * X.z)) * X;
-
-	Point3f up = X.cross(Z); //Axis Y
-
-	/*
-	printf("%f\n",X.x*X.x+X.y*X.y+X.z*X.z);
-	printf("%f\n",up.x*up.x+up.y*up.y+up.z*up.z);
-	printf("%f\n",Z.x*Z.x+Z.y*Z.y+Z.z*Z.z);
-
-	printf("(%f,%f)\n",u,v);
-*/
-
-	R.at<float>(2, 0) = Z.x;
-	R.at<float>(2, 1) = Z.y;
-	R.at<float>(2, 2) = Z.z;
-
-	R.at<float>(1, 0) = up.x;
-	R.at<float>(1, 1) = up.y;
-	R.at<float>(1, 2) = up.z;
-
-	R.at<float>(0, 0) = X.x;
-	R.at<float>(0, 1) = X.y;
-	R.at<float>(0, 2) = X.z;
-
-	for (int i = 0; i < NUM; i++)
-	{
-		Mat vec(3, 1, CV_32F);
-		vec.at<float>(0, 0) = mrw.data[3 * i];
-		vec.at<float>(1, 0) = mrw.data[3 * i + 1];
-		vec.at<float>(2, 0) = mrw.data[3 * i + 2];
-
-		int red = 255;
-		int green = 255;
-		int blue = 255;
-
-		Mat trVec = R * (vec - T);
-		trVec = C * trVec;
-		trVec = trVec / trVec.at<float>(2, 0);
-		//		printf("(%d,%d)",(int)trVec.at<float>(0,0),(int)trVec.at<float>(1,0));
-
-		circle(resImg, Point((int)trVec.at<float>(0, 0), (int)trVec.at<float>(1, 0)), 2.0, Scalar(blue, green, red), 2, 8);
-	}
-}
-
-void DrawPoints(vector<Point2d> &points,
-				Mat image);
-
 void FitPlaneLORANSAC(
 	const vector<Point3f> &points,
 	vector<int> &inliers,
@@ -109,54 +23,6 @@ void FitPlaneLORANSAC(
 	bool shouldDraw = false);
 
 
-
-void show3DPoints(const MatrixReaderWriter& mrw)
-{
-	namedWindow("Display window", WINDOW_AUTOSIZE); // Create a window for display.
-	Mat resImg;
-
-	float v = 1.0;
-	float u = 0.5;
-	float rad = 1200;
-
-	resImg = Mat::zeros(600, 800, CV_8UC3);
-	drawPoints(mrw, u, v, rad, resImg);
-	imshow("Display window", resImg); // Show our image inside it.
-
-	char key;
-	while (true)
-	{
-		key = cvWaitKey(50);
-		if (key == 'p')
-			break;
-
-		switch (key)
-		{
-		case 'q': //Left
-			u += 0.1;
-			break;
-		case 'a': //Right
-			u -= 0.1;
-			break;
-		case 'w': //Up
-			v += 0.1;
-			break;
-		case 's': //Down
-			v -= 0.1;
-			break;
-		case 'e':
-			rad *= 1.1;
-			break;
-		case 'd':
-			rad /= 1.1;
-			break;
-		}
-		//cout << "Rad: " << rad << endl;
-		resImg = Mat::zeros(600, 800, CV_8UC3);
-		drawPoints(mrw, u, v, rad, resImg);
-		imshow("Display window", resImg); // Show our image inside it.
-	}
-}
 
 vector<Point3f> MRWTo3DPoints(const MatrixReaderWriter& mrw);
 MatrixReaderWriter PointsToMRW(const vector<Point3f>& points, int rowNum, int columnNum, const vector<int>& colorPoints);
@@ -212,7 +78,7 @@ int main(int argc, char *argv[])
 		points3D, // The generated 2D points
 		inliers, // Output: the indices of the inliers
 		bestPlane, // Output: the parameters of the found 2D line
-		1, // The inlier-outlier threshold
+		0.09, // The inlier-outlier threshold
 		atoi(argv[2]), // The number of iterations
 		&results,// Optional: the image where we can draw results
 		false); 
@@ -281,20 +147,8 @@ MatrixReaderWriter PointsToMRW(const vector<Point3f>& points, int rowNum, int co
 	return re;
 }
 
+void LocalOptimization(const vector<int>& inliners, const vector<Point3f>& points, vector<int>& optimizedInliners, Mat& bestPlane, double threshold_);
 
-void DrawPoints(vector<Point2d> &points,
-				Mat image)
-{
-	for (int i = 0; i < points.size(); ++i)
-	{
-		// Draws a circle
-		circle(image,				  // to this image
-			   points[i],			  // at this location
-			   1,					  // with this radius
-			   Scalar(255, 255, 255), // and this color
-			   -1);					  // The thickness of the circle's outline. -1 = filled circle
-	}
-}
 
 
 // Apply RANSAC to fit points to a 2D line
@@ -419,14 +273,25 @@ void FitPlaneLORANSAC(
 		// 4. Store the inlier number and the line parameters if it is better than the previous best.
 		if (inliers.size() > bestInliers.size())
 		{
-			bestInliers.swap(inliers);
+			//PointsToMRW(points_, rowNum, columnNum, inliers).save("Inliners.xyz");
+			cout << "Bestinliner num: " << inliers.size() << endl;
+			LocalOptimization(inliers, points_, bestInliers, bestPlane, threshold_);
+			cout << "Optimized Inliner num: " << bestInliers.size() << endl;
+			//PointsToMRW(points_, rowNum, columnNum, bestInliers).save("OptimizedInliners.xyz");
+			//getchar();
+
+
+			// bestInliers.swap(inliers);
 			inliers.clear();
 			inliers.resize(0);
 
-			bestPlane.at<double>(0) = a;
-			bestPlane.at<double>(1) = b;
-			bestPlane.at<double>(2) = c;
-			bestPlane.at<double>(4) = d;
+			// bestPlane.at<double>(0) = a;
+			// bestPlane.at<double>(1) = b;
+			// bestPlane.at<double>(2) = c;
+			// bestPlane.at<double>(4) = d;
+
+			
+
 		}
 
 		if (shouldDraw)
@@ -442,11 +307,96 @@ void FitPlaneLORANSAC(
 
 	vector<Point3f> bestColoredPoints;
 
-	// for(int i = 0; i < bestInliers.size(); i++){
-	// 	bestColoredPoints.push_back(points_[i]);
-	// }
-	cout << "BestInliner number: " << bestInliers.size() << endl;
+	
+	cout << "Final BestInliner number: " << bestInliers.size() << endl;
 
 	PointsToMRW(points_, rowNum, columnNum, bestInliers).save("BestInliners.xyz");
 
+
+
+}
+
+void innerRANSAC(const vector<int>& currentInliners, const vector<Point3f>& points_, vector<int>& optimizedInliners, Mat& bestPlane,
+	int maxIterationNumber = 20, double threshold_ = 0.02);
+
+void LocalOptimization(const vector<int>& inliners, const vector<Point3f>& points, vector<int>& optimizedInliners, Mat& bestPlane, double threshold_){
+	innerRANSAC(inliners, points, optimizedInliners, bestPlane, 20, threshold_);
+}
+
+void innerRANSAC(const vector<int>& currentInliners, const vector<Point3f>& points_, vector<int>& optimizedInliners, Mat& bestPlane,
+	int maxIterationNumber, double threshold_){
+	
+	int iterationNumber = 0;
+	int bestInlierNumber = currentInliners.size();
+	vector<int> bestInliers, inliers;
+	bestInliers.reserve(points_.size());
+	inliers.reserve(points_.size());
+	constexpr int kSampleSize = 3;
+	std::vector<int> sample(kSampleSize);
+
+	bestInliers = currentInliners;
+
+	while (iterationNumber++ < maxIterationNumber)
+	{
+		// Inner RANSAC
+		for (size_t sampleIdx = 0; sampleIdx < kSampleSize; ++sampleIdx)
+		{
+			do
+			{
+				sample[sampleIdx] =
+					round((currentInliners.size() - 1) * static_cast<double>(rand()) / static_cast<double>(RAND_MAX));
+
+				
+				if (sampleIdx == 0)
+					break;
+
+				if (sampleIdx == 1 &&
+					sample[0] != sample[1])
+					break;
+
+				if (sampleIdx == 2 &&
+					sample[0] != sample[1] && sample[0] != sample[2] && sample[1] != sample[2])
+					break;
+			} while (true);
+		}
+
+		const Point3f &p1 = points_[currentInliners[sample[0]]]; // First point selected
+		const Point3f &p2 = points_[currentInliners[sample[1]]]; // Second point select
+		const Point3f &p3 = points_[currentInliners[sample[2]]]; // Second point select
+
+		Point3f helperP1 = p2 - p1;
+		Point3f helperP2 = p3 - p1;
+		double a = helperP1.y * helperP2.z - helperP2.y * helperP1.x;
+		double b = helperP2.x * helperP1.z - helperP1.x * helperP2.z;
+		double c = helperP1.x * helperP2.y - helperP1.y * helperP2.x;
+		double d = (- a * p1.x - b * p1.y - c * p1.z) ;
+		
+		inliers.clear();
+		for (size_t pointIdx = 0; pointIdx < points_.size(); ++pointIdx)
+		{
+			const Point3f &point = points_[pointIdx];
+			const double distance =
+				static_cast<double>(abs(a * point.x + b * point.y + c * point.z + d)) /
+				static_cast<double>(sqrt(a * a + b * b + c * c));
+
+
+			if (distance < threshold_)
+			{
+				inliers.emplace_back(pointIdx);
+			}
+		}
+
+		if (inliers.size() > bestInliers.size())
+		{
+			bestInliers.swap(inliers);
+			inliers.clear();
+			inliers.resize(0);
+
+			bestPlane.at<double>(0) = a;
+			bestPlane.at<double>(1) = b;
+			bestPlane.at<double>(2) = c;
+			bestPlane.at<double>(4) = d;
+		}		
+	}
+	optimizedInliners = bestInliers;
 }
