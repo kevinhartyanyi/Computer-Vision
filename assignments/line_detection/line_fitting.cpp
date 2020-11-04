@@ -29,7 +29,7 @@ int main(int argc, char *argv[])
 		return -1;
     }
 
-    string img_name = "left.jpg";
+    string img_name = "right.jpg";
 
     Mat image = imread(img_name);
     Mat contours;

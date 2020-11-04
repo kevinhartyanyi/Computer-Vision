@@ -36,7 +36,7 @@ int main(int argc, char *argv[])
 {
 	if (argc != 3)
 	{
-		cout << "Usage: Iteration number, XYZ Filename" << endl;
+		cout << "Usage: XYZ Filename Iteration number" << endl;
 		return -1;
 	}
 
@@ -78,7 +78,7 @@ int main(int argc, char *argv[])
 		points3D, // The generated 2D points
 		inliers, // Output: the indices of the inliers
 		bestPlane, // Output: the parameters of the found 2D line
-		0.09, // The inlier-outlier threshold
+		0.1, // The inlier-outlier threshold
 		atoi(argv[2]), // The number of iterations
 		&results,// Optional: the image where we can draw results
 		false); 
