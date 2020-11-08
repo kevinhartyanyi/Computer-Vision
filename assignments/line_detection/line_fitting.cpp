@@ -4,6 +4,7 @@
 #include <opencv2/cvconfig.h>
 #include <iostream>
 #include <string>
+#include <algorithm>
 
 
 using namespace cv;
@@ -13,7 +14,7 @@ void DrawPoints(vector<Point2d> &points,
 	Mat image);
 
 void FitLineRANSAC(
-	const vector<Point2d> &points,
+	vector<Point2d> points,
 	vector<int> &inliers,
 	Mat &line,
 	double threshold,
@@ -29,20 +30,21 @@ int main(int argc, char *argv[])
 		return -1;
     }
 
-    string img_name = "right.jpg";
-
+    string img_name = "0097.jpg";
     Mat image = imread(img_name);
+
     Mat contours;
 
-    Canny(image,contours,100,200);
+    imshow("Original",image);
 
-    namedWindow("Image");
-    imshow("Image",image);
+    Canny(image,contours,100,200);
+    imshow("Original After Canny",image);
 
     namedWindow("Canny");
     imshow("Canny",contours);
 
     Mat edge_binary = contours / 255;
+	cout << "Canny points: " <<  cv::sum( edge_binary )[0] << endl;
 
     // The indices of the points of the line
 	vector<int> inliers; 
@@ -64,7 +66,7 @@ int main(int argc, char *argv[])
 
     DrawPoints(points, results);
 
-    imshow("Image", results);
+    imshow("Results", results);
 
 
     FitLineRANSAC(
@@ -99,7 +101,7 @@ void DrawPoints(vector<Point2d> &points,
 
 // Apply RANSAC to fit points to a 2D line
 void FitLineRANSAC(
-	const vector<Point2d> &points_,
+	vector<Point2d> points_,
 	vector<int> &inliers_, 
 	Mat &line_,
 	double threshold_,
@@ -125,6 +127,10 @@ void FitLineRANSAC(
 	std::vector<int> sample(kSampleSize);
 
 	cv::Mat tmp_image;
+
+	int lineCount = 0;
+
+	//std::vector<int> mask(points_.size(), 0);
 
 	// RANSAC:
 	// 1. Select a minimal sample, i.e., in this case, 2 random points.
@@ -172,7 +178,7 @@ void FitLineRANSAC(
 				Scalar(255, 0, 0), // and this color
 				-1); // The thickness of the circle's outline. -1 = filled circle
 		}
-			   
+
 		// 2. Fit a line to the points.
 		const Point2d &p1 = points_[sample[0]]; // First point selected
 		const Point2d &p2 = points_[sample[1]]; // Second point select		
@@ -228,17 +234,27 @@ void FitLineRANSAC(
 				}
 			}
 		}
+		if(inliers.size() > 200)
+		{
+			cout << "Inliner number: " << inliers.size() << endl;
 
-        cout << "Inliner number: " << inliers.size() << endl;
+			lineCount++;
+		}
 		// 4. Store the inlier number and the line parameters if it is better than the previous best. 
 		if (inliers.size() > 200)
-		{			
-
+		{	
 			cv::line(*image_,
 				Point2d(0, -c / b),
 				Point2d(image_->cols, (- a * image_->cols - c) / b),
 				cv::Scalar(0, 0, 255),
 				2);
+
+
+			sort (inliers.begin(), inliers.end());
+
+			for(int i=inliers.size() - 1; i >= 0; i--){
+				points_.erase(points_.begin() + inliers[i]);
+			}
 		}
 
 		if (shouldDraw)
@@ -253,4 +269,5 @@ void FitLineRANSAC(
 			cv::waitKey(0);
 		}
 	}
+	cout << "Drawn lines: " << lineCount << endl;
 }

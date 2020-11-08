@@ -189,6 +189,9 @@ float timeX = 0;
 int timeConstant = 1;
 
 int main(int argc, const char** argv) {
+
+	
+
 	if (argc != 2) { printf("Usage: FV filename\n");exit(0); }
 
 	mrw = new MatrixReaderWriter(argv[1]);
