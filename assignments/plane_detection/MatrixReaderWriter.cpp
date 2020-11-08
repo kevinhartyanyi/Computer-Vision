@@ -20,6 +20,7 @@ MatrixReaderWriter::MatrixReaderWriter(const char* fileName) {
 }//end MatrixReaderWriter(const char* fileName)
 
 void MatrixReaderWriter::load(const char* fileName) {
+	
 	ifstream datafile(fileName);
 	string line;
 	int lineCounter = 0;
@@ -35,7 +36,7 @@ void MatrixReaderWriter::load(const char* fileName) {
 		datafile.close();
 	}//end if
 	else {
-		cout << "Unable to open file";
+		cout << "Unable to open file" << endl;
 	}
 
 

@@ -8,7 +8,6 @@
 #include <algorithm>
 #include <stdlib.h> 
 #include <time.h>
-#include <unistd.h>
 
 using namespace cv;
 using namespace std;
@@ -36,10 +35,9 @@ int main(int argc, char *argv[])
 {
 	if (argc != 3)
 	{
-		cout << "Usage: XYZ Filename Iteration number" << endl;
+		std::cout << "Usage: XYZ Filename Iteration number" << endl;
 		return -1;
 	}
-
 	MatrixReaderWriter mrw(argv[1]);
 	rowNum = mrw.rowNum;
 	columnNum = mrw.columnNum;
@@ -60,12 +58,7 @@ int main(int argc, char *argv[])
 		color.push_back(i);
 	}
 
-
-
-	MatrixReaderWriter tmp = PointsToMRW(points3D, rowNum, columnNum, color);
-
 	//show3DPoints(tmp);
-	tmp.save("tmp.xyz");
 
 	// The indices of the points of the line
 	vector<int> inliers;
@@ -88,14 +81,14 @@ int main(int argc, char *argv[])
 
 void print3dpoints(const vector<Point3f>& points, int num) {
 	for (int i = 0;i < points.size() && i < num; i++) {
-		cout << points[i].x << " " <<  points[i].y << " " << points[i].z << endl;
+		std::cout << points[i].x << " " <<  points[i].y << " " << points[i].z << endl;
 	}
 }
 
 vector<Point3f> MRWTo3DPoints(const MatrixReaderWriter& mrw) {
 	int NUM = mrw.rowNum;
 	vector<Point3f> re;
-	cout << "COLUMN: " << mrw.columnNum << endl;
+	std::cout << "COLUMN: " << mrw.columnNum << endl;
 
 	for (int i = 0;i < NUM;i++) {
 		if (mrw.columnNum  == 3){
@@ -179,6 +172,7 @@ void FitPlaneLORANSAC(
 	std::vector<int> sample(kSampleSize);
 
 	cv::Mat tmp_image;
+
 
 	// RANSAC:
 	// 1. Select a minimal sample, i.e., in this case, 2 random points.
@@ -269,14 +263,14 @@ void FitPlaneLORANSAC(
 			}
 		}
 
-		cout << "Inliner number: " << inliers.size() << endl;
+		std::cout << "Inliner number: " << inliers.size() << endl;
 		// 4. Store the inlier number and the line parameters if it is better than the previous best.
 		if (inliers.size() > bestInliers.size())
 		{
 			//PointsToMRW(points_, rowNum, columnNum, inliers).save("Inliners.xyz");
-			cout << "Bestinliner num: " << inliers.size() << endl;
+			std::cout << "Bestinliner num: " << inliers.size() << endl;
 			LocalOptimization(inliers, points_, bestInliers, bestPlane, threshold_);
-			cout << "Optimized Inliner num: " << bestInliers.size() << endl;
+			std::cout << "Optimized Inliner num: " << bestInliers.size() << endl;
 			//PointsToMRW(points_, rowNum, columnNum, bestInliers).save("OptimizedInliners.xyz");
 			//getchar();
 
@@ -297,7 +291,7 @@ void FitPlaneLORANSAC(
 		if (shouldDraw)
 		{
 			PointsToMRW(points_, rowNum, columnNum, inliers).save("Inliners.xyz");	 
-			cout << "Inliners" << endl;
+			std::cout << "Inliners" << endl;
 			
 		}
 	}
@@ -308,7 +302,7 @@ void FitPlaneLORANSAC(
 	vector<Point3f> bestColoredPoints;
 
 	
-	cout << "Final BestInliner number: " << bestInliers.size() << endl;
+	std::cout << "Final BestInliner number: " << bestInliers.size() << endl;
 
 	PointsToMRW(points_, rowNum, columnNum, bestInliers).save("BestInliners.xyz");
 
@@ -335,6 +329,7 @@ void innerRANSAC(const vector<int>& currentInliners, const vector<Point3f>& poin
 	std::vector<int> sample(kSampleSize);
 
 	bestInliers = currentInliners;
+	std::cout << "Hallo" << endl;
 
 	while (iterationNumber++ < maxIterationNumber)
 	{
