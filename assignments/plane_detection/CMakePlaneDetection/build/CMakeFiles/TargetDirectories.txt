@@ -1,0 +1,5 @@
+/home/kevin/Programming/School/MSc_1/Computer_vision/Computer-Vision/assignments/plane_detection/CMakePlaneDetection/build/CMakeFiles/edit_cache.dir
+/home/kevin/Programming/School/MSc_1/Computer_vision/Computer-Vision/assignments/plane_detection/CMakePlaneDetection/build/CMakeFiles/package_source.dir
+/home/kevin/Programming/School/MSc_1/Computer_vision/Computer-Vision/assignments/plane_detection/CMakePlaneDetection/build/CMakeFiles/rebuild_cache.dir
+/home/kevin/Programming/School/MSc_1/Computer_vision/Computer-Vision/assignments/plane_detection/CMakePlaneDetection/build/CMakeFiles/package.dir
+/home/kevin/Programming/School/MSc_1/Computer_vision/Computer-Vision/assignments/plane_detection/CMakePlaneDetection/build/CMakeFiles/PlaneDetectionCMake.dir
