@@ -237,80 +237,92 @@ Mat OldcalcHomography(vector<pair<Point2f, Point2f> > pointPairs) {
 }
 
 
-void RANSAC(vector<pair<Point2f, Point2f> > pointPairs, double threshold, int iteration_number) {
+Mat RANSAC(const vector<pair<Point2f, Point2f> > pointPairs, double threshold, int iteration_number) {
     Mat bestH;
-    std::vector<int> bestInliners;
+    std::vector<pair<Point2f, Point2f>> bestInliners;
+    int bestInlinerError;
     constexpr int kSampleSize = 4;
-    // The current sample
-    std::vector<int> sample;
 
-    for (size_t sampleIdx = 0; sampleIdx < kSampleSize; ++sampleIdx)
+    for (size_t i = 0; i < iteration_number; i++)
     {
-        int r;
-        do
+        // The current sample
+        std::vector<int> sample;
+        for (size_t sampleIdx = 0; sampleIdx < kSampleSize; ++sampleIdx)
         {
-            r = round((pointPairs.size() - 1) * static_cast<double>(rand()) / static_cast<double>(RAND_MAX));
-        } while (std::find(sample.begin(), sample.end(), r) != sample.end());
-        sample.push_back(r);
-    }
-
-    std::vector<pair<Point2f, Point2f>> samplePairs;
-    cout << "Random sample:" << endl;
-    for (auto a : sample) {
-        cout << a << endl;
-        samplePairs.push_back(pointPairs[a]);
-    }
-
-    Mat H = OldcalcHomography(samplePairs);
-
-    // Projection error
-    float errorSum = 0;
-    for (int i = 0; i < pointPairs.size(); i++) {
-        float u1 = pointPairs[i].first.x;
-        float v1 = pointPairs[i].first.y;
-
-        float u2 = pointPairs[i].second.x;
-        float v2 = pointPairs[i].second.y;
-
-        Mat p1(3, 1, CV_32F);
-        p1.at<float>(0, 0) = u1;
-        p1.at<float>(1, 0) = v1;
-        p1.at<float>(2, 0) = 1;
-
-        Mat p2(3, 1, CV_32F);
-        p2.at<float>(0, 0) = u2;
-        p2.at<float>(1, 0) = v2;
-        p2.at<float>(2, 0) = 1;
-
-        Mat p2Calc = H * p1;
-
-        cout << "Point " << i << endl;
-        cout << p2 << endl;
-        cout << "Point " << i << " Calc" << endl;
-        cout << p2Calc << endl;
-        cout << endl;
-
-        float error = norm(p2, p2Calc, NORM_L2);
-        cout << "Point " << i << " error: " << error << endl;
-        cout << endl;
-        errorSum = errorSum + error;
-
-        // Count inliners
-        std::vector<int> inliners;
-        if (error < threshold) {
-            inliners.push_back(i);
+            int r;
+            do
+            {
+                r = round((pointPairs.size() - 1) * static_cast<double>(rand()) / static_cast<double>(RAND_MAX));
+            } while (std::find(sample.begin(), sample.end(), r) != sample.end());
+            sample.push_back(r);
         }
 
+        std::vector<pair<Point2f, Point2f>> samplePairs;
+        cout << "Random sample:" << endl;
+        for (auto a : sample) {
+            cout << a << endl;
+            samplePairs.push_back(pointPairs[a]);
+        }
+
+        Mat H = OldcalcHomography(samplePairs);
+
+        // Projection error
+        std::vector<pair<Point2f, Point2f>> inliners;
+        float errorSum = 0;
+        for (int i = 0; i < pointPairs.size(); i++) {
+            float u1 = pointPairs[i].first.x;
+            float v1 = pointPairs[i].first.y;
+
+            float u2 = pointPairs[i].second.x;
+            float v2 = pointPairs[i].second.y;
+
+            Mat p1(3, 1, CV_32F);
+            p1.at<float>(0, 0) = u1;
+            p1.at<float>(1, 0) = v1;
+            p1.at<float>(2, 0) = 1;
+
+            Mat p2(3, 1, CV_32F);
+            p2.at<float>(0, 0) = u2;
+            p2.at<float>(1, 0) = v2;
+            p2.at<float>(2, 0) = 1;
+
+            Mat p2Calc = H * p1;
+
+            cout << "Point " << i << endl;
+            cout << p2 << endl;
+            cout << "Point " << i << " Calc" << endl;
+            cout << p2Calc << endl;
+            cout << endl;
+
+            float error = norm(p2, p2Calc, NORM_L2);
+            cout << "Point " << i << " error: " << error << endl;
+            cout << endl;
+            errorSum = errorSum + error;
+
+            // Count inliners
+            
+            if (error < threshold) {
+                inliners.push_back(pointPairs[i]);
+            }     
+        }
+        cout << "Error Sum: " << errorSum << endl;
+
+        cout << "Inliner number: " << inliners.size() << endl;
         // Check if it's better than the best
         if (inliners.size() > bestInliners.size())
         {
             bestH = H;
-            bestInliners.swap(inliners);
+            bestInliners.swap(inliners);  
+            bestInlinerError = errorSum;    
         }
+    }      
 
-    }
-    cout << "Error Sum: " << errorSum << endl;
-
+    //return bestH;
+    // TODO: Is this correct?
+    Mat reH = OldcalcHomography(bestInliners);
+    cout << "Best Inliner number: " << bestInliners.size() << endl;
+    cout << "Best Inliner projection error: " << bestInlinerError << endl;
+    return reH;
 }
 
 //Tranformation of images
@@ -376,10 +388,9 @@ int main(int argc, char** argv)
         pointPairs.push_back(currPts);
     }
 
-    RANSAC(pointPairs, 70, 100);
-    return 0;
+    Mat H = RANSAC(pointPairs, 200, 100);
 
-    Mat H = calcHomography(pointPairs);
+    //Mat H = OldcalcHomography(pointPairs);
 
 
     Mat image1;
