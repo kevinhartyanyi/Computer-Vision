@@ -1,7 +1,9 @@
-#include <opencv2/core/core.hpp>
+﻿#include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <iostream>
 #include <stdio.h>
+#include <algorithm>
+#include <time.h>
 
 #include "MatrixReaderWriter.h"
 
@@ -10,6 +12,179 @@ using namespace std;
 
 
 Mat calcHomography(vector<pair<Point2f, Point2f> > pointPairs) {
+    const int ptsNum = pointPairs.size();
+    Mat A(2 * ptsNum, 9, CV_32F);
+
+    //
+    float u1Avg = 0;
+    float v1Avg = 0;
+    float u2Avg = 0;
+    float v2Avg = 0;
+    vector<float> u1Vec;
+    vector<float> v1Vec;
+    vector<float> u2Vec;
+    vector<float> v2Vec;
+    
+    for (int i = 0; i < ptsNum; i++) {
+        float u1 = pointPairs[i].first.x;
+        float v1 = pointPairs[i].first.y;
+
+        float u2 = pointPairs[i].second.x;
+        float v2 = pointPairs[i].second.y;
+
+        
+        u1Vec.push_back(u1);
+        v1Vec.push_back(v1);
+        u2Vec.push_back(u2);
+        v2Vec.push_back(v2);
+
+        u1Avg += u1;
+        v1Avg += v1;
+        u2Avg += u2;
+        v2Avg += v2;
+    }
+    //
+
+    /*
+    * Data normalization
+    * → translation: origo should be at the center of gravity
+    * → scale: spread should be set to √2
+    */
+    const double ptsNumDouble = static_cast<double>(ptsNum);
+    u1Avg = u1Avg / ptsNumDouble;
+    v1Avg = v1Avg / ptsNumDouble;
+    u2Avg = u2Avg / ptsNumDouble;
+    v2Avg = v2Avg / ptsNumDouble;
+
+    float dist1 = 0;
+    for (int i = 0; i < ptsNum; i++) {
+        dist1 += sqrt(pow(u1Vec[i] - u1Avg, 2) + pow(v1Vec[i] - v1Avg, 2));
+    }
+    float s1 = sqrt(2) * ptsNum / dist1;
+
+    float dist2 = 0;
+    for (int i = 0; i < ptsNum; i++) {
+        dist2 += sqrt(pow(u2Vec[i] - u2Avg, 2) + pow(v2Vec[i] - v2Avg, 2));
+    }
+    float s2 = sqrt(2) * ptsNum / dist2;
+
+    Mat T1(3, 3, CV_32F);
+    Mat T2(3, 3, CV_32F);
+
+    // T1
+    T1.at<float>(0, 0) = 1;
+    T1.at<float>(1, 0) = 0;
+    T1.at<float>(2, 0) = 0;
+
+    T1.at<float>(0, 1) = 0;
+    T1.at<float>(1, 1) = 1;
+    T1.at<float>(2, 1) = 0;
+
+    T1.at<float>(0, 2) = -u1Avg;
+    T1.at<float>(1, 2) = -v1Avg;
+    T1.at<float>(2, 2) = 1 / s1;
+
+    T1 = s1 * T1;
+
+    // T2
+    T2.at<float>(0, 0) = 1;
+    T2.at<float>(1, 0) = 0;
+    T2.at<float>(2, 0) = 0;
+
+    T2.at<float>(0, 1) = 0;
+    T2.at<float>(1, 1) = 1;
+    T2.at<float>(2, 1) = 0;
+
+    T2.at<float>(0, 2) = -u2Avg;
+    T2.at<float>(1, 2) = -v2Avg;
+    T2.at<float>(2, 2) = 1 / s2;
+
+    T2 = s2 * T2;
+    //
+
+    for (int i = 0; i < ptsNum; i++) {
+        float u1 = pointPairs[i].first.x;
+        float v1 = pointPairs[i].first.y;
+
+        float u2 = pointPairs[i].second.x;
+        float v2 = pointPairs[i].second.y;
+
+        Mat p1(3, 1, CV_32F);
+        Mat p2(3, 1, CV_32F);
+
+        p1.at<float>(0, 0) = u1;
+        p1.at<float>(1, 0) = v1;
+        p1.at<float>(2, 0) = 1;
+
+        p2.at<float>(0, 0) = u2;
+        p2.at<float>(1, 0) = v2;
+        p2.at<float>(2, 0) = 1;
+
+        //
+        Mat p1Hat(3, 1, CV_32F);
+        Mat p2Hat(3, 1, CV_32F);
+
+        p1Hat = T1 * p1;
+        p2Hat = T2 * p2;
+
+        float u1Hat = p1Hat.at<float>(0, 0);
+        float v1Hat = p1Hat.at<float>(1, 0);
+
+        float u2Hat = p2Hat.at<float>(0, 0);
+        float v2Hat = p2Hat.at<float>(1, 0);
+
+
+        A.at<float>(2 * i, 0) = u1Hat;
+        A.at<float>(2 * i, 1) = v1Hat;
+        A.at<float>(2 * i, 2) = 1.0f;
+        A.at<float>(2 * i, 3) = 0.0f;
+        A.at<float>(2 * i, 4) = 0.0f;
+        A.at<float>(2 * i, 5) = 0.0f;
+        A.at<float>(2 * i, 6) = -u2Hat * u1Hat;
+        A.at<float>(2 * i, 7) = -u2Hat * v1Hat;
+        A.at<float>(2 * i, 8) = -u2Hat;
+
+        A.at<float>(2 * i + 1, 0) = 0.0f;
+        A.at<float>(2 * i + 1, 1) = 0.0f;
+        A.at<float>(2 * i + 1, 2) = 0.0f;
+        A.at<float>(2 * i + 1, 3) = u1Hat;
+        A.at<float>(2 * i + 1, 4) = v1Hat;
+        A.at<float>(2 * i + 1, 5) = 1.0f;
+        A.at<float>(2 * i + 1, 6) = -v2Hat * u1Hat;
+        A.at<float>(2 * i + 1, 7) = -v2Hat * v1Hat;
+        A.at<float>(2 * i + 1, 8) = -v2Hat;
+    }
+
+    //
+
+    Mat eVecs(9, 9, CV_32F), eVals(9, 9, CV_32F);
+    cout << A << endl;
+    eigen(A.t() * A, eVals, eVecs);
+
+    cout << eVals << endl;
+    cout << eVecs << endl;
+
+
+    Mat HHat(3, 3, CV_32F);
+    for (int i = 0; i < 9; i++) HHat.at<float>(i / 3, i % 3) = eVecs.at<float>(8, i);
+
+    cout << HHat << endl;
+
+    //Normalize:
+    HHat = HHat * (1.0 / HHat.at<float>(2, 2));
+    cout << "HHat: " << HHat << endl;
+
+
+    Mat H(3, 3, CV_32F);
+    H = T2.t() * HHat * T1;
+
+    cout << "H: " << H << endl;
+
+    return H;
+}
+
+
+Mat OldcalcHomography(vector<pair<Point2f, Point2f> > pointPairs) {
     const int ptsNum = pointPairs.size();
     Mat A(2 * ptsNum, 9, CV_32F);
     for (int i = 0; i < ptsNum; i++) {
@@ -62,9 +237,81 @@ Mat calcHomography(vector<pair<Point2f, Point2f> > pointPairs) {
 }
 
 
+void RANSAC(vector<pair<Point2f, Point2f> > pointPairs, double threshold, int iteration_number) {
+    Mat bestH;
+    std::vector<int> bestInliners;
+    constexpr int kSampleSize = 4;
+    // The current sample
+    std::vector<int> sample;
 
+    for (size_t sampleIdx = 0; sampleIdx < kSampleSize; ++sampleIdx)
+    {
+        int r;
+        do
+        {
+            r = round((pointPairs.size() - 1) * static_cast<double>(rand()) / static_cast<double>(RAND_MAX));
+        } while (std::find(sample.begin(), sample.end(), r) != sample.end());
+        sample.push_back(r);
+    }
 
+    std::vector<pair<Point2f, Point2f>> samplePairs;
+    cout << "Random sample:" << endl;
+    for (auto a : sample) {
+        cout << a << endl;
+        samplePairs.push_back(pointPairs[a]);
+    }
 
+    Mat H = OldcalcHomography(samplePairs);
+
+    // Projection error
+    float errorSum = 0;
+    for (int i = 0; i < pointPairs.size(); i++) {
+        float u1 = pointPairs[i].first.x;
+        float v1 = pointPairs[i].first.y;
+
+        float u2 = pointPairs[i].second.x;
+        float v2 = pointPairs[i].second.y;
+
+        Mat p1(3, 1, CV_32F);
+        p1.at<float>(0, 0) = u1;
+        p1.at<float>(1, 0) = v1;
+        p1.at<float>(2, 0) = 1;
+
+        Mat p2(3, 1, CV_32F);
+        p2.at<float>(0, 0) = u2;
+        p2.at<float>(1, 0) = v2;
+        p2.at<float>(2, 0) = 1;
+
+        Mat p2Calc = H * p1;
+
+        cout << "Point " << i << endl;
+        cout << p2 << endl;
+        cout << "Point " << i << " Calc" << endl;
+        cout << p2Calc << endl;
+        cout << endl;
+
+        float error = norm(p2, p2Calc, NORM_L2);
+        cout << "Point " << i << " error: " << error << endl;
+        cout << endl;
+        errorSum = errorSum + error;
+
+        // Count inliners
+        std::vector<int> inliners;
+        if (error < threshold) {
+            inliners.push_back(i);
+        }
+
+        // Check if it's better than the best
+        if (inliners.size() > bestInliners.size())
+        {
+            bestH = H;
+            bestInliners.swap(inliners);
+        }
+
+    }
+    cout << "Error Sum: " << errorSum << endl;
+
+}
 
 //Tranformation of images
 
@@ -115,6 +362,7 @@ int main(int argc, char** argv)
         return -1;
     }
 
+    srand((unsigned)time(NULL));
 
     int r = mtxrw.rowNum;
     int c = mtxrw.columnNum;
@@ -128,6 +376,9 @@ int main(int argc, char** argv)
         pointPairs.push_back(currPts);
     }
 
+    RANSAC(pointPairs, 70, 100);
+    return 0;
+
     Mat H = calcHomography(pointPairs);
 
 
@@ -136,7 +387,7 @@ int main(int argc, char** argv)
 
     if (!image1.data)                              // Check for invalid input
     {
-        cout << "Could not open or find the image" << argv[2] << std::endl;
+        cout << "Could not open or find the image: " << argv[2] << std::endl;
         return -1;
     }
 
@@ -145,7 +396,7 @@ int main(int argc, char** argv)
 
     if (!image2.data)                              // Check for invalid input
     {
-        cout << "Could not open or find the image" << argv[3] << std::endl;
+        cout << "Could not open or find the image: " << argv[3] << std::endl;
         return -1;
     }
 
