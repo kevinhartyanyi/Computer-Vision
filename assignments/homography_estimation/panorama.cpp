@@ -237,12 +237,13 @@ Mat OldcalcHomography(vector<pair<Point2f, Point2f> > pointPairs) {
 }
 
 
-Mat RANSAC(const vector<pair<Point2f, Point2f> > pointPairs, double threshold, int iteration_number) {
+Mat RANSAC(const vector<pair<Point2f, Point2f> > pointPairs, double threshold, int iteration_number, bool log = false) {
     Mat bestH;
     std::vector<pair<Point2f, Point2f>> bestInliners;
     int bestInlinerError;
     constexpr int kSampleSize = 4;
 
+    // 1.
     for (size_t i = 0; i < iteration_number; i++)
     {
         // The current sample
@@ -258,9 +259,9 @@ Mat RANSAC(const vector<pair<Point2f, Point2f> > pointPairs, double threshold, i
         }
 
         std::vector<pair<Point2f, Point2f>> samplePairs;
-        cout << "Random sample:" << endl;
+        if(log) cout << "Random sample:" << endl;
         for (auto a : sample) {
-            cout << a << endl;
+            if (log) cout << a << endl;
             samplePairs.push_back(pointPairs[a]);
         }
 
@@ -288,15 +289,19 @@ Mat RANSAC(const vector<pair<Point2f, Point2f> > pointPairs, double threshold, i
 
             Mat p2Calc = H * p1;
 
-            cout << "Point " << i << endl;
-            cout << p2 << endl;
-            cout << "Point " << i << " Calc" << endl;
-            cout << p2Calc << endl;
-            cout << endl;
+            if (log) {
+                cout << "Point " << i << endl;
+                cout << p2 << endl;
+                cout << "Point " << i << " Calc" << endl;
+                cout << p2Calc << endl;
+                cout << endl;
+            }
 
             float error = norm(p2, p2Calc, NORM_L2);
-            cout << "Point " << i << " error: " << error << endl;
-            cout << endl;
+            if (log) {
+                cout << "Point " << i << " error: " << error << endl;
+                cout << endl;
+            }
             errorSum = errorSum + error;
 
             // Count inliners
@@ -305,19 +310,25 @@ Mat RANSAC(const vector<pair<Point2f, Point2f> > pointPairs, double threshold, i
                 inliners.push_back(pointPairs[i]);
             }     
         }
-        cout << "Error Sum: " << errorSum << endl;
+        if (log) {
+            cout << "Error Sum: " << errorSum << endl;
 
-        cout << "Inliner number: " << inliners.size() << endl;
+            cout << "Inliner number: " << inliners.size() << endl;
+        }
         // Check if it's better than the best
         if (inliners.size() > bestInliners.size())
         {
+            // 2. Choose the H with the largest number of inliers
             bestH = H;
             bestInliners.swap(inliners);  
             bestInlinerError = errorSum;    
         }
     }      
-
+    //cout << "Best Inliner number: " << bestInliners.size() << endl;
+    //cout << "Best Inliner projection error: " << bestInlinerError << endl;
     //return bestH;
+
+    // 3. Recompute H with the bestInliners.
     // TODO: Is this correct?
     Mat reH = OldcalcHomography(bestInliners);
     cout << "Best Inliner number: " << bestInliners.size() << endl;
@@ -388,7 +399,7 @@ int main(int argc, char** argv)
         pointPairs.push_back(currPts);
     }
 
-    Mat H = RANSAC(pointPairs, 200, 100);
+    Mat H = RANSAC(pointPairs, 10, 100);
 
     //Mat H = OldcalcHomography(pointPairs);
 
