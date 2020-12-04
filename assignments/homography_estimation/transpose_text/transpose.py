@@ -1,4 +1,4 @@
-with open("image1.txt", 'rU') as reader:
+with open("features_n.txt", 'rU') as reader:
     text = reader.read()
 
 lines = text.splitlines()
@@ -7,7 +7,7 @@ second_line = []
 third_line = []
 fourth_line = []
 print(lines)
-for l in lines[:10]:
+for l in lines:
     l = [e for e in l.split(' ') if e != '']
     print(l)
     fi,s,t,fo = l
