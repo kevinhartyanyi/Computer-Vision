@@ -18,7 +18,7 @@
     <ClCompile Include="..\..\MatrixReaderWriter.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\panorama.cpp">
+    <ClCompile Include="..\..\homography.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

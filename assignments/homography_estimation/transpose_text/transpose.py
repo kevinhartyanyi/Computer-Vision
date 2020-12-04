@@ -1,4 +1,4 @@
-with open("features_n.txt", 'rU') as reader:
+with open("image_3.txt", 'rU') as reader:
     text = reader.read()
 
 lines = text.splitlines()
