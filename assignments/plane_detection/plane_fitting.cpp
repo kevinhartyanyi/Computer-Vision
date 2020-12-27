@@ -8,7 +8,7 @@
 #include <algorithm>
 #include <stdlib.h>
 #include <time.h>
-#include <unistd.h>
+//#include <unistd.h>
 
 using namespace cv;
 using namespace std;
@@ -29,7 +29,7 @@ size_t GetIterationNumber(
 	const size_t &sampleSize_);
 
 vector<Point3f> MRWTo3DPoints(const MatrixReaderWriter &mrw);
-MatrixReaderWriter PointsToMRW(const vector<Point3f> &points, int rowNum, int columnNum, const vector<int> &colorPoints);
+void PointsToMRW(const vector<Point3f> &points, int rowNum, int columnNum, const vector<int> &colorPoints);
 void print3dpoints(const vector<Point3f> &points, int num = 10000);
 
 int rowNum;
@@ -134,7 +134,7 @@ vector<Point3f> MRWTo3DPoints(const MatrixReaderWriter &mrw)
 	return re;
 }
 
-MatrixReaderWriter PointsToMRW(const vector<Point3f> &points, int rowNum, int columnNum, const vector<int> &colorPoints)
+void PointsToMRW(const vector<Point3f> &points, int rowNum, int columnNum, const vector<int> &colorPoints)
 {
 
 	if (columnNum != 6)
@@ -170,7 +170,9 @@ MatrixReaderWriter PointsToMRW(const vector<Point3f> &points, int rowNum, int co
 		re.data[colorPoints[i] * columnNum + 5] = 255;
 	}
 
-	return re;
+	re.save("BestInliners.xyz");
+
+	//return re;
 }
 
 void LocalOptimization(const vector<int> &inliners, const vector<Point3f> &points, vector<int> &optimizedInliners, Mat &bestPlane, double threshold_);
@@ -325,8 +327,8 @@ void FitPlaneLORANSAC(
 
 		if (shouldDraw)
 		{
-			PointsToMRW(points_, rowNum, columnNum, inliers).save("Inliners.xyz");
-			std::cout << "Inliners" << endl;
+			//PointsToMRW(points_, rowNum, columnNum, inliers).save("Inliners.xyz");
+			//std::cout << "Inliners" << endl;
 		}
 	}
 
@@ -337,7 +339,9 @@ void FitPlaneLORANSAC(
 
 	std::cout << "Final BestInliner number: " << bestInliers.size() << endl;
 
-	PointsToMRW(points_, rowNum, columnNum, bestInliers).save("BestInliners.xyz");
+	PointsToMRW(points_, rowNum, columnNum, bestInliers);
+	//cout << bInliners.data[0] <<endl;
+	//bInliners.save("BestInliners.xyz");
 }
 
 void innerRANSAC(const vector<int> &currentInliners, const vector<Point3f> &points_, 
@@ -423,7 +427,7 @@ void innerRANSAC(const vector<int> &currentInliners, const vector<Point3f> &poin
 			bestPlane.at<double>(0) = a;
 			bestPlane.at<double>(1) = b;
 			bestPlane.at<double>(2) = c;
-			bestPlane.at<double>(4) = d;
+			bestPlane.at<double>(3) = d;
 		}
 	}
 	optimizedInliners = bestInliers;
